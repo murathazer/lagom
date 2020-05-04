@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# Copyright (C) Lightbend Inc. <https://www.lightbend.com>
+
+# shellcheck source=bin/scriptLib
+. "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/scriptLib"
+
+declare -a EXTRA_TASKS
+if [ "$TRAVIS_EVENT_TYPE" != "cron" ]; then
+    EXTRA_TASKS+=("versionSyncCheck")
+fi
+
+runSbt  +headerCheckAll \
+        scalafmtCheckAll scalafmtSbtCheck \
+        javafmtCheckAll \
+        +mimaReportBinaryIssues \
+        checkAkkaModuleVersions "${EXTRA_TASKS[@]}"
+
+# Only update Whitesource if WHITESOURCE_PASSWORD is defined
+# Encrypted environment variables are not available to pull requests for security reasons
+if [[ -n "${WHITESOURCE_PASSWORD}" ]]; then
+  runSbtNoisy whitesourceUpdate
+fi

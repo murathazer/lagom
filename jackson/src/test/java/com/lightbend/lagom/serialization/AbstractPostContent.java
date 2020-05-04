@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
  */
+
 package com.lightbend.lagom.serialization;
 
 import org.pcollections.TreePVector;
@@ -25,6 +26,4 @@ public interface AbstractPostContent extends Jsonable {
   default PVector<Comment> getComments() {
     return TreePVector.empty();
   }
-
-
 }

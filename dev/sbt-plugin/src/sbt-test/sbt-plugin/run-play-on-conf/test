@@ -1,0 +1,16 @@
+# Structure of this test:
+# =======================
+
+# Here we test that the `runAll` task on a play app that uses deprecated serviceInfo config.
+
+# `runAll` tests
+# --------------
+> runAll
+> validateRequest http://localhost:9001/p status 200 body-contains "Hello Play"
+> validateRequest http://localhost:9001/p/assets/foo.js status 200 body-contains "var foo"
+
+# Change an asset
+$ copy-file changes/p/foo.js.1 p/app/assets/foo.js
+> validateRequest http://localhost:9001/p/assets/foo.js status 200 body-contains "var bar"
+
+> stop

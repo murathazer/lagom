@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2016 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
  */
+
 package controllers
 
 import play.api._
@@ -9,7 +10,11 @@ import scala.collection.JavaConverters._
 
 import javax.inject.Inject
 
-class Application @Inject() (app: play.api.Application, configuration: Configuration) extends Controller {
+class Application @Inject()(
+  env: Environment,
+  configuration: Configuration,
+  val controllerComponents: ControllerComponents
+) extends BaseController {
 
   def index = Action {
     Ok(views.html.index("Your new application is ready."))
@@ -20,7 +25,7 @@ class Application @Inject() (app: play.api.Application, configuration: Configura
   }
 
   def count = Action {
-    val num = app.resource("application.conf").toSeq.size
+    val num = env.resource("application.conf").toSeq.size
     Ok(num.toString)
   }
 }

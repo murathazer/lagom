@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package impl;
 
 import com.google.inject.AbstractModule;
@@ -10,40 +14,41 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.ArrayList;
 
+import com.typesafe.config.Config;
+
 public class Module extends AbstractModule implements ServiceGuiceSupport {
 	@Override
 	protected void configure() {
-		bindServices(serviceBinding(FooService.class, FooServiceImpl.class));
 		bind(OnStart.class).asEagerSingleton();
 	}
 }
 
 class OnStart {
 
-  public static String CASSANDRA_JOURNAL_KEYSPACE        = "cassandra-journal.keyspace";
   public static String CASSANDRA_JOURNAL_PORT            = "cassandra-journal.port";
-  public static String CASSANDRA_SNAPSHOT_STORE_KEYSPACE = "cassandra-snapshot-store.keyspace";
   public static String CASSANDRA_SNAPSHOT_STORE_PORT     = "cassandra-snapshot-store.port";
-  public static String LAGOM_CASSANDRA_READ_KEYSPACE     = "lagom.persistence.read-side.cassandra.keyspace";
   public static String LAGOM_CASSANDRA_READ_PORT         = "lagom.persistence.read-side.cassandra.port";
 
   public static String INTERNAL_ACTOR_SYSTEM_NAME        = "lagom.akka.dev-mode.actor-system.name";
   public static String APPLICATION_ACTOR_SYSTEM_NAME     = "play.akka.actor-system";
-  
+
   @Inject
-  public OnStart(Application app) {
-  	dumpInjectedConfig(app);
+  public OnStart(Environment environment, Config configuration) {
+  	dumpInjectedConfig(environment, configuration);
   }
 
-  private void dumpInjectedConfig(Application app) {
-    Configuration config = app.configuration();
-    ArrayList<String> keys = new ArrayList<>(Arrays.asList(CASSANDRA_JOURNAL_KEYSPACE, CASSANDRA_JOURNAL_PORT, 
-      CASSANDRA_SNAPSHOT_STORE_KEYSPACE, CASSANDRA_SNAPSHOT_STORE_PORT,
-      LAGOM_CASSANDRA_READ_KEYSPACE, LAGOM_CASSANDRA_READ_PORT, INTERNAL_ACTOR_SYSTEM_NAME, APPLICATION_ACTOR_SYSTEM_NAME));
+  private void dumpInjectedConfig(Environment environment, Config configuration) {
+    ArrayList<String> keys = new ArrayList<>(Arrays.asList(
+            CASSANDRA_JOURNAL_PORT,
+            CASSANDRA_SNAPSHOT_STORE_PORT,
+            LAGOM_CASSANDRA_READ_PORT,
+            INTERNAL_ACTOR_SYSTEM_NAME,
+            APPLICATION_ACTOR_SYSTEM_NAME
+    ));
 
-    try(FileWriter writer = new FileWriter(app.getFile("target/injected-config.conf"), true)) {
+    try(FileWriter writer = new FileWriter(environment.getFile("target/injected-config.conf"), true)) {
       for(String key: keys) {
-        String value = config.getString(key);
+        String value = configuration.getString(key);
         writer.write(key + "="+value+"\n");
       }
     }

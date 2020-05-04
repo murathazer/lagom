@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package api;
 
 import akka.stream.javadsl.Source;
@@ -11,10 +15,10 @@ import static com.lightbend.lagom.javadsl.api.Service.*;
 
 public interface BarService extends Service {
 
-  ServiceCall<NotUsed, NotUsed, String> bar();
+  ServiceCall<NotUsed, String> bar();
 
   @Override
   default Descriptor descriptor() {
-    return named("/barservice").with(restCall(Method.GET,  "/bar",    bar()));
+    return named("/barservice").withCalls(restCall(Method.GET,  "/bar",    this::bar));
   }
 }

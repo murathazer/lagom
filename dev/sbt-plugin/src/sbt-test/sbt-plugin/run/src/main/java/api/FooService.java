@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package api;
 
 import akka.stream.javadsl.Source;
@@ -11,10 +15,10 @@ import static com.lightbend.lagom.javadsl.api.Service.*;
 
 public interface FooService extends Service {
 
-  ServiceCall<NotUsed, NotUsed, NotUsed> foo();
+  ServiceCall<NotUsed, NotUsed> foo();
 
   @Override
   default Descriptor descriptor() {
-    return named("/fooservice").with(restCall(Method.GET,  "/foo",    foo()));
+    return named("/fooservice").withCalls(restCall(Method.GET,  "/foo",    this::foo));
   }
 }

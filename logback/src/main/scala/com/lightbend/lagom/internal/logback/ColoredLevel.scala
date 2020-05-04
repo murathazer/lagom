@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
  */
+
 package com.lightbend.lagom.internal.logback
 
 import ch.qos.logback.classic._
@@ -16,7 +17,6 @@ import ch.qos.logback.classic.spi._
  * }}}
  */
 class ColoredLevel extends ClassicConverter {
-
   import play.utils.Colors
 
   def convert(event: ILoggingEvent): String = {
@@ -28,5 +28,4 @@ class ColoredLevel extends ClassicConverter {
       case Level.ERROR => "[" + Colors.red("error") + "]"
     }
   }
-
 }

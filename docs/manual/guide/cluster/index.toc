@@ -1,5 +1,0 @@
-PersistentEntity:Persistent Entity
-ReadSide:Persistent Read-Side
-PubSub:Publish-Subscribe
-Serialization:Serialization
-Cluster:Cluster

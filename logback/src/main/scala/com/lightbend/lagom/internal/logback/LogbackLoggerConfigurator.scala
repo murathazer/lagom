@@ -1,40 +1,53 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
  */
+
 package com.lightbend.lagom.internal.logback
 
 import java.io.File
 import java.net.URL
 
+import org.slf4j.impl.StaticLoggerBinder
+import org.slf4j.ILoggerFactory
 import org.slf4j.LoggerFactory
 import play.api._
 
 import scala.util.control.NonFatal
 
 object LogbackLoggerConfigurator {
-  final private val DevLogbackConfig: String = "logback-lagom-dev.xml"
-  final private val DefaultLogbackConfig: String = "logback-lagom-default.xml"
+  private final val DevLogbackConfig: String     = "logback-lagom-dev.xml"
+  private final val DefaultLogbackConfig: String = "logback-lagom-default.xml"
 }
 
 class LogbackLoggerConfigurator extends LoggerConfigurator {
   import LogbackLoggerConfigurator._
 
+  override def loggerFactory: ILoggerFactory = {
+    StaticLoggerBinder.getSingleton.getLoggerFactory
+  }
+
   /**
    * Initialize the Logger when there's no application ClassLoader available.
    */
-  def init(rootPath: File, mode: Mode.Mode): Unit = {
-    val properties = Map("application.home" -> rootPath.getAbsolutePath)
+  def init(rootPath: File, mode: Mode): Unit = {
+    val properties   = Map("application.home" -> rootPath.getAbsolutePath)
     val resourceName = if (mode == Mode.Dev) DevLogbackConfig else DefaultLogbackConfig
-    val resourceUrl = Option(this.getClass.getClassLoader.getResource(resourceName))
+    val resourceUrl  = Option(this.getClass.getClassLoader.getResource(resourceName))
     configure(properties, resourceUrl)
+  }
+
+  override def configure(env: Environment): Unit = {
+    configure(env, Configuration.empty, Map.empty)
   }
 
   /**
    * Reconfigures the underlying logback infrastructure.
    */
-  def configure(env: Environment): Unit = {
-    val properties = Map("application.home" -> env.rootPath.getAbsolutePath)
-
+  override def configure(
+      env: Environment,
+      configuration: Configuration,
+      optionalProperties: Map[String, String]
+  ): Unit = {
     // Get an explicitly configured resource URL
     // Fallback to a file in the conf directory if the resource wasn't found on the classpath
     def explicitResourceUrl = sys.props.get("logger.resource").flatMap { r =>
@@ -46,12 +59,18 @@ class LogbackLoggerConfigurator extends LoggerConfigurator {
 
     // logback.xml is the documented method, logback-lagom-default.xml is the fallback that Lagom uses
     // if no other file is found
-    def resourceUrl = env.resource("logback.xml")
-      .orElse(env.resource(
-        if (env.mode == Mode.Dev) DevLogbackConfig else DefaultLogbackConfig
-      ))
+    def resourceUrl =
+      env
+        .resource("logback.xml")
+        .orElse(
+          env.resource(
+            if (env.mode == Mode.Dev) DevLogbackConfig else DefaultLogbackConfig
+          )
+        )
 
-    val configUrl = explicitResourceUrl orElse explicitFileUrl orElse resourceUrl
+    val configUrl = explicitResourceUrl.orElse(explicitFileUrl).orElse(resourceUrl)
+
+    val properties = LoggerConfigurator.generateProperties(env, configuration, optionalProperties)
 
     configure(properties, configUrl)
   }
@@ -66,9 +85,9 @@ class LogbackLoggerConfigurator extends LoggerConfigurator {
 
       import org.slf4j.bridge._
 
-      Option(java.util.logging.Logger.getLogger("")).map { root =>
+      Option(java.util.logging.Logger.getLogger("")).foreach { root =>
         root.setLevel(Level.FINEST)
-        root.getHandlers.foreach(root.removeHandler(_))
+        root.getHandlers.foreach(root.removeHandler)
       }
 
       SLF4JBridgeHandler.install()
@@ -82,7 +101,7 @@ class LogbackLoggerConfigurator extends LoggerConfigurator {
       import org.slf4j._
 
       try {
-        val ctx = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+        val ctx          = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
         val configurator = new JoranConfigurator
         configurator.setContext(ctx)
         ctx.reset()
@@ -113,9 +132,7 @@ class LogbackLoggerConfigurator extends LoggerConfigurator {
       } catch {
         case NonFatal(_) =>
       }
-
     }
-
   }
 
   /**

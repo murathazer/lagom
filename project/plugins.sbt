@@ -1,20 +1,26 @@
-// Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+// Copyright (C) Lightbend Inc. <https://www.lightbend.com>
 
-buildInfoSettings
-sourceGenerators in Compile <+= buildInfo
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
 
-libraryDependencies ++= Seq(
-  "org.scala-sbt" % "scripted-plugin" % sbtVersion.value
-)
+addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "1.5.1")
-addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "0.5.0")
-addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.3")
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.0.0")
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
-// need this for com.typesafe.sbt.preprocess.Preprocess
-addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
-addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.5.1")
-addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.3.8")
+// the plugins used during release can have an impact on default values
+// of the build. To validate your changes on the release plugins don't
+// affect the release process, review https://github.com/lagom/lagom/issues/1496#issuecomment-408398508
+addSbtPlugin("de.heikoseeberger" % "sbt-header"   % "5.6.0")
+addSbtPlugin("org.xerial.sbt"    % "sbt-sonatype" % "3.9.2")
+addSbtPlugin("com.github.gseitz" % "sbt-release"  % "1.0.13")
+addSbtPlugin("com.jsuereth"      % "sbt-pgp"      % "2.0.1")
+addSbtPlugin("org.foundweekends" % "sbt-bintray"  % "0.5.6")
 
+addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm"   % "0.4.0")
+addSbtPlugin("com.typesafe"     % "sbt-mima-plugin" % "0.7.0")
+
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2")
+addSbtPlugin("com.lightbend"    % "sbt-whitesource"      % "0.1.18")
+
+addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.5.1")
+addSbtPlugin("org.scalameta"     % "sbt-scalafmt"       % "2.3.4")
+addSbtPlugin("com.dwijnand"      % "sbt-dynver"         % "4.0.0")
+
+addSbtPlugin("com.lightbend.akka" % "sbt-akka-version-check" % "0.1")

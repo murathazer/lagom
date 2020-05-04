@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.home.actor
 
 import com.lightbend.lagom.docs.ServiceSupport
@@ -6,29 +10,28 @@ import akka.actor.ActorSystem
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
-import org.scalactic.ConversionCheckedTripleEquals
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
 import akka.cluster.Cluster
 import java.util.concurrent.TimeUnit
 
 object ActorServiceSpec {
   def config = ConfigFactory.parseString("""
-    akka.actor.provider = akka.cluster.ClusterActorRefProvider
-    akka.remote.netty.tcp.port = 0
-    akka.remote.netty.tcp.hostname = 127.0.0.1
+    akka.actor.provider = cluster
+    akka.remote.artery.canonical.port = 0
+    akka.remote.artery.canonical.hostname = 127.0.0.1
     """)
 }
 
-class ActorServiceSpec extends TestKit(ActorSystem("ActorServiceSpec", ActorServiceSpec.config))
-  with ServiceSupport
-  with BeforeAndAfterAll with ConversionCheckedTripleEquals
-  with ImplicitSender {
-
+class ActorServiceSpec
+    extends TestKit(ActorSystem("ActorServiceSpec", ActorServiceSpec.config))
+    with ServiceSupport
+    with BeforeAndAfterAll
+    with TypeCheckedTripleEquals
+    with ImplicitSender {
   val workerRoleConfig = ConfigFactory.parseString("akka.cluster.roles = [worker-node]")
-  val node2 = ActorSystem("ActorServiceSpec", workerRoleConfig.withFallback(system.settings.config))
-  val node3 = ActorSystem("ActorServiceSpec", workerRoleConfig.withFallback(system.settings.config))
+  val node2            = ActorSystem("ActorServiceSpec", workerRoleConfig.withFallback(system.settings.config))
+  val node3            = ActorSystem("ActorServiceSpec", workerRoleConfig.withFallback(system.settings.config))
 
   override def beforeAll {
     Cluster(system).join(Cluster(system).selfAddress)
@@ -51,20 +54,18 @@ class ActorServiceSpec extends TestKit(ActorSystem("ActorServiceSpec", ActorServ
 
   "Integration with actors" must {
     "work with for example clustered consistent hashing" in withServiceInstance[WorkerService](
-      new WorkerServiceImpl(system)).apply { app =>
-        client => {
-          val job = Job.of("123", "compute", "abc")
+      new WorkerServiceImpl(system)
+    ).apply { app => client =>
+      {
+        val job = Job.of("123", "compute", "abc")
 
-          // might taka a while until cluster is formed and router knows about the nodes
-          within(15.seconds) {
-            awaitAssert {
-              client.doWork().invoke(job).toCompletableFuture.get(3, TimeUnit.SECONDS) should ===(JobAccepted.of("123"))
-            }
+        // might take a while until cluster is formed and router knows about the nodes
+        within(15.seconds) {
+          awaitAssert {
+            client.doWork().invoke(job).toCompletableFuture.get(3, TimeUnit.SECONDS) should ===(JobAccepted.of("123"))
           }
         }
-
       }
+    }
   }
-
 }
-

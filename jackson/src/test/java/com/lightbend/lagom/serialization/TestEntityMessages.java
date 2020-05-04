@@ -1,27 +1,31 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
  */
+
 package com.lightbend.lagom.serialization;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public class TestEntityMessages {
-  public static interface Cmd extends Jsonable {
-  }
+  public static interface Cmd extends Jsonable {}
 
   public static class Get implements Cmd {
-    private static Get instance = new Get();
+
+    private static final long serialVersionUID = 1L;
+    private static final Get INSTANCE = new Get();
 
     @JsonCreator
     public static Get instance() {
-      return Get.instance;
+      return Get.INSTANCE;
     }
 
-    private Get() {
-    }
+    private Get() {}
   }
 
   public static class Add implements Cmd {
+
+    private static final long serialVersionUID = 1L;
+
     private final String element;
     private final int times;
 
@@ -54,20 +58,14 @@ public class TestEntityMessages {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
       Add other = (Add) obj;
       if (element == null) {
-        if (other.element != null)
-          return false;
-      } else if (!element.equals(other.element))
-        return false;
-      if (times != other.times)
-        return false;
+        if (other.element != null) return false;
+      } else if (!element.equals(other.element)) return false;
+      if (times != other.times) return false;
       return true;
     }
 
@@ -75,14 +73,17 @@ public class TestEntityMessages {
     public String toString() {
       return "Add [element=" + element + ", times=" + times + "]";
     }
-
   }
 
   public enum Mode {
-    PREPEND, APPEND
+    PREPEND,
+    APPEND
   }
 
   public static class ChangeMode implements Cmd {
+
+    private static final long serialVersionUID = 1L;
+
     private final Mode mode;
 
     @JsonCreator
@@ -104,15 +105,11 @@ public class TestEntityMessages {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
       ChangeMode other = (ChangeMode) obj;
-      if (mode != other.mode)
-        return false;
+      if (mode != other.mode) return false;
       return true;
     }
 
@@ -120,10 +117,12 @@ public class TestEntityMessages {
     public String toString() {
       return "ChangeMode [mode=" + mode + "]";
     }
-
   }
 
   public static class UndefinedCmd implements Cmd {
+
+    private static final long serialVersionUID = 1L;
+
     @Override
     public int hashCode() {
       return 0;
@@ -131,10 +130,8 @@ public class TestEntityMessages {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      else
-        return (getClass() == obj.getClass());
+      if (this == obj) return true;
+      else return (getClass() == obj.getClass());
     }
 
     @Override
@@ -143,10 +140,14 @@ public class TestEntityMessages {
     }
   }
 
-  public static abstract class Evt implements Jsonable {
+  public abstract static class Evt implements Jsonable {
+    private static final long serialVersionUID = 1L;
   }
 
   public static class Appended extends Evt {
+
+    private static final long serialVersionUID = 1L;
+
     private final String element;
 
     @JsonCreator
@@ -168,18 +169,13 @@ public class TestEntityMessages {
 
     @Override
     public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
       Appended other = (Appended) obj;
       if (element == null) {
-        if (other.element != null)
-          return false;
-      } else if (!element.equals(other.element))
-        return false;
+        if (other.element != null) return false;
+      } else if (!element.equals(other.element)) return false;
       return true;
     }
 
@@ -187,10 +183,11 @@ public class TestEntityMessages {
     public String toString() {
       return "Appended [element=" + element + "]";
     }
-
   }
 
   public static class InPrependMode extends Evt {
+
+    private static final long serialVersionUID = 1L;
     private static final InPrependMode instance = new InPrependMode();
 
     @JsonCreator
@@ -198,13 +195,11 @@ public class TestEntityMessages {
       return InPrependMode.instance;
     }
 
-    private InPrependMode() {
-    }
+    private InPrependMode() {}
 
     @Override
     public String toString() {
       return "InPrependMode";
     }
   }
-
 }

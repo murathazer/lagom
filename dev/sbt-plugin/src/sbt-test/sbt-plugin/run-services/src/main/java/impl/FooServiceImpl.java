@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package impl;
 
 import akka.NotUsed;
@@ -19,16 +23,12 @@ public class FooServiceImpl implements FooService {
   }
 
   @Override
-  public ServiceCall<NotUsed, NotUsed, NotUsed> foo() {
-    return (id, request) -> {
-      return CompletableFuture.completedFuture(NotUsed.getInstance());
-    };
+  public ServiceCall<NotUsed, NotUsed> foo() {
+    return request -> CompletableFuture.completedFuture(NotUsed.getInstance());
   }
 
   @Override
-  public ServiceCall<NotUsed, NotUsed, NotUsed> cassandra() {
-    return (id, request) -> {
-      return db.selectAll("SELECT now() FROM system.local;").thenApply(rows -> NotUsed.getInstance());
-    };
+  public ServiceCall<NotUsed, NotUsed> cassandra() {
+    return request -> db.selectAll("SELECT now() FROM system.local;").thenApply(rows -> NotUsed.getInstance());
   }
 }

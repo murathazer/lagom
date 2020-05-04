@@ -1,0 +1,29 @@
+/*
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package com.lightbend.lagom.api.tools.tests.scaladsl
+
+import akka.NotUsed
+import com.lightbend.lagom.scaladsl.api.transport.Method
+import com.lightbend.lagom.scaladsl.api.Descriptor
+import com.lightbend.lagom.scaladsl.api.Service
+import com.lightbend.lagom.scaladsl.api.ServiceCall
+import com.lightbend.lagom.scaladsl.api.Service._
+
+import scala.concurrent.Future
+
+trait UndescribedService extends Service {
+  def getMock(id: String): ServiceCall[NotUsed, NotUsed]
+
+  def descriptor: Descriptor =
+    named("/noaclservice").withCalls(
+      restCall(Method.GET, "/mocks/:id", getMock _)
+    )
+}
+
+class UndescribedServiceImpl extends UndescribedService {
+  def getMock(id: String) = ServiceCall { _ =>
+    Future.successful(NotUsed)
+  }
+}

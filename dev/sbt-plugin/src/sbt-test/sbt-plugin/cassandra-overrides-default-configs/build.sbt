@@ -1,11 +1,12 @@
-import com.lightbend.lagom.sbt.Internal.Keys.interactionMode
+lazy val `my-project` = (project in file("."))
+  .enablePlugins(LagomJava)
+  .settings(
+    libraryDependencies ++= Seq(lagomJavadslPersistenceCassandra, lagomSbtScriptedLibrary)
+  )
 
-lazy val `my-project` = (project in file(".")).enablePlugins(LagomJava)
-  .settings(libraryDependencies +=  lagomJavadslPersistence)
-
-scalaVersion := Option(System.getProperty("scala.version")).getOrElse("2.11.7")
-
-interactionMode := com.lightbend.lagom.sbt.NonBlockingInteractionMode
+lagomCassandraEnabled in ThisBuild := true
+// no need for Kafka on this test
+lagomKafkaEnabled in ThisBuild := false
 
 val CassandraJournalKeyspace       = "cassandra-journal.keyspace"
 val CassandraJournalPort           = "cassandra-journal.port"
@@ -14,20 +15,18 @@ val CassandraSnapshotStorePort     = "cassandra-snapshot-store.port"
 val LagomCassandraReadKeyspace     = "lagom.persistence.read-side.cassandra.keyspace"
 val LagomCassandraReadPort         = "lagom.persistence.read-side.cassandra.port";
 
-
-
 lazy val injectedCassandraConfig = Def.task { target.value / "injected-cassandra.conf" }
 
 def validate(configFile: java.io.File, key: String, expected: String) = {
   import com.typesafe.config._
-  if(!configFile.isFile) throw new RuntimeException(s"No file found at ${configFile.getPath}")
+  if (!configFile.isFile) throw new RuntimeException(s"No file found at ${configFile.getPath}")
   val config = ConfigFactory.parseFile(configFile)
   val actual = config.getString(key)
   if (expected == actual) {
     println(s"Expected and got $expected")
   } else {
     throw new RuntimeException(s"Expected value of key $key to be $expected but got $actual")
-  }	
+  }
 }
 
 InputKey[Unit]("journalKeyspace") := {

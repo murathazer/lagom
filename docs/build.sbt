@@ -1,8 +1,22 @@
+import akka.JavaVersion
+import akka.CrossJava
 
-val PlayVersion = "2.5.0"
-val AkkaVersion = "2.4.2"
+val ScalaVersion = "2.12.10"
+
+val AkkaVersion = sys.props.getOrElse("lagom.build.akka.version", "2.6.4") // sync with project/Dependencies.scala
+
+val JUnitVersion          = "4.12"
+val JUnitInterfaceVersion = "0.11"
+val ScalaTestVersion      = "3.1.1"
+val PlayVersion           = "2.8.1" // sync with project/Dependencies.scala
+val Log4jVersion          = "2.13.2"
+val MacWireVersion        = "2.3.3"
+val LombokVersion         = "1.18.8"
+val HibernateVersion      = "5.4.14.Final"
+val ValidationApiVersion  = "2.0.1.Final"
 
 val branch = {
+  import scala.sys.process._
   val rev = "git rev-parse --abbrev-ref HEAD".!!.trim
   if (rev == "HEAD") {
     // not on a branch, get the hash
@@ -10,79 +24,157 @@ val branch = {
   } else rev
 }
 
+def evictionSettings: Seq[Setting[_]] = Seq(
+  // This avoids a lot of dependency resolution warnings to be showed.
+  // No need to show them here since it is the docs project.
+  evictionWarningOptions in update := EvictionWarningOptions.default
+    .withWarnTransitiveEvictions(false)
+    .withWarnDirectEvictions(false)
+)
+
 lazy val docs = project
   .in(file("."))
-  .enablePlugins(LightbendMarkdown)
+  .enablePlugins(LightbendMarkdown, AutomateHeaderPlugin)
   .settings(forkedTests: _*)
+  .settings(evictionSettings: _*)
   .settings(
     resolvers += Resolver.typesafeIvyRepo("releases"),
-    scalaVersion := "2.11.7",
+    scalaVersion := ScalaVersion,
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % "test",
-      "org.apache.cassandra" % "cassandra-all" % "3.0.2" % "test",
-      "junit" % "junit" % "4.12" % "test",
-      "com.novocode" % "junit-interface" % "0.11" % "test",
-      "org.scalatest" %% "scalatest" % "2.2.4" % Test,
-      "com.typesafe.play" %% "play-netty-server" % PlayVersion % Test,
-      "com.typesafe.play" %% "play-logback" % PlayVersion % Test
+      "com.typesafe.akka"        %% "akka-stream-testkit"   % AkkaVersion % "test",
+      "junit"                    % "junit"                  % JUnitVersion % "test",
+      "com.novocode"             % "junit-interface"        % JUnitInterfaceVersion % "test",
+      "org.scalatest"            %% "scalatest"             % ScalaTestVersion % Test,
+      "com.typesafe.play"        %% "play-akka-http-server" % PlayVersion % Test,
+      "com.typesafe.play"        %% "play-logback"          % PlayVersion % Test,
+      "org.apache.logging.log4j" % "log4j-api"              % Log4jVersion % "test",
+      "com.softwaremill.macwire" %% "macros"                % MacWireVersion % "provided",
+      "org.projectlombok"        % "lombok"                 % LombokVersion,
+      "org.hibernate"            % "hibernate-core"         % HibernateVersion,
+      "javax.validation"         % "validation-api"         % ValidationApiVersion
     ),
-    javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.8", "-target", "1.8", "-parameters", "-Xlint:unchecked", "-Xlint:deprecation"),
+    scalacOptions ++= Seq("-deprecation", "-Xfatal-warnings"),
+    javacOptions ++= Seq(
+      "-encoding",
+      "UTF-8",
+      "-parameters",
+      "-Xlint:unchecked",
+      "-Xlint:deprecation",
+      "-Werror"
+    ) ++ JavaVersion.sourceAndTarget(CrossJava.Keys.fullJavaHomes.value("8")),
     testOptions in Test += Tests.Argument("-oDF"),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
     // This is needed so that Java APIs that use immutables will typecheck by the Scala compiler
     compileOrder in Test := CompileOrder.JavaThenScala,
-
-    markdownDocsTitle := "Lagom",
-    markdownDocPaths += {
-      // What I'd really like to do here is trigger the unidoc task in the root project externally,
-      // however I tried that and for some reason it doesn't work.  So instead we'll just depend on
-      // it being run manually.
+    sourceDirectories in javafmt in Test ++= (unmanagedSourceDirectories in Test).value,
+    sourceDirectories in javafmt in Test ++= (unmanagedResourceDirectories in Test).value,
+    markdownDocumentation := {
       val javaUnidocTarget = parentDir / "target" / "javaunidoc"
-      streams.value.log.info(s"Serving javadocs from $javaUnidocTarget. Rerun unidoc in root project to refresh")
-      javaUnidocTarget -> "api/java"
+      val unidocTarget     = parentDir / "target" / "unidoc"
+      streams.value.log.info(
+        s"Serving javadocs from $javaUnidocTarget and scaladocs from $unidocTarget. Rerun unidoc in root project to refresh"
+      )
+      Seq(
+        Documentation(
+          "java",
+          Seq(
+            DocPath(baseDirectory.value / "manual" / "common", "."),
+            DocPath(baseDirectory.value / "manual" / "java", "."),
+            DocPath(javaUnidocTarget, "api")
+          ),
+          "Home.html",
+          "Java Home",
+          Map("api/index.html" -> "API Documentation")
+        ),
+        Documentation(
+          "scala",
+          Seq(
+            DocPath(baseDirectory.value / "manual" / "common", "."),
+            DocPath(baseDirectory.value / "manual" / "scala", "."),
+            DocPath(unidocTarget, "api")
+          ),
+          "Home.html",
+          "Scala Home",
+          Map("api/index.html" -> "API Documentation")
+        )
+      )
     },
-    markdownApiDocs := Seq(
-        "api/java/index.html" -> "Java"
-    ),
     markdownUseBuiltinTheme := false,
     markdownTheme := Some("lagom.LagomMarkdownTheme"),
-    markdownSourceUrl := Some(url(s"https://github.com/lagom/lagom/tree/$branch/docs/manual/")),
-
-    markdownS3CredentialsHost := "downloads.typesafe.com.s3.amazonaws.com",
-    markdownS3Bucket := Some("downloads.typesafe.com"),
-    markdownS3Prefix := "rp/lagom/",
-    markdownS3Region := awscala.Region0.US_EAST_1,
-    excludeFilter in markdownS3PublishDocs ~= {
-      _ || "*.scala" || "*.java" || "*.sbt" || "*.conf" || "*.md" || "*.toc"
-    }
-
-  ).dependsOn(serviceIntegrationTests, immutables % "test->compile", theme % "run-markdown")
+    markdownGenerateTheme := Some("bare"),
+    markdownGenerateIndex := true,
+    markdownStageIncludeWebJars := false,
+    markdownSourceUrl := Some(url(s"https://github.com/lagom/lagom/edit/$branch/docs/manual/")),
+    headerLicense := Some(
+      HeaderLicense.Custom(
+        "Copyright (C) Lightbend Inc. <https://www.lightbend.com>"
+      )
+    ),
+  )
+  .dependsOn(
+    serviceIntegrationTestsJavadsl,
+    persistenceJdbcJavadsl,
+    persistenceJpaJavadsl,
+    serviceIntegrationTestsScaladsl,
+    persistenceCassandraScaladsl,
+    persistenceJdbcScaladsl,
+    testkitJavadsl,
+    testkitScaladsl,
+    kafkaBrokerScaladsl,
+    playJson,
+    pubsubScaladsl,
+    akkaDiscoveryJavadsl,
+    akkaDiscoveryScaladsl,
+    immutables % "test->compile",
+    theme      % "run-markdown",
+    devmodeScaladsl
+  )
 
 lazy val parentDir = Path.fileProperty("user.dir").getParentFile
 
 // Depend on the integration tests, they should bring everything else in
-lazy val serviceIntegrationTests = ProjectRef(parentDir, "service-integration-tests")
+lazy val serviceIntegrationTestsJavadsl  = ProjectRef(parentDir, "integration-tests-javadsl")
+lazy val serviceIntegrationTestsScaladsl = ProjectRef(parentDir, "integration-tests-scaladsl")
+lazy val persistenceJdbcJavadsl          = ProjectRef(parentDir, "persistence-jdbc-javadsl")
+lazy val persistenceJdbcScaladsl         = ProjectRef(parentDir, "persistence-jdbc-scaladsl")
+lazy val persistenceJpaJavadsl           = ProjectRef(parentDir, "persistence-jpa-javadsl")
+lazy val persistenceCassandraScaladsl    = ProjectRef(parentDir, "persistence-cassandra-scaladsl")
+lazy val testkitJavadsl                  = ProjectRef(parentDir, "testkit-javadsl")
+lazy val testkitScaladsl                 = ProjectRef(parentDir, "testkit-scaladsl")
+lazy val playJson                        = ProjectRef(parentDir, "play-json")
+lazy val kafkaBrokerScaladsl             = ProjectRef(parentDir, "kafka-broker-scaladsl")
+lazy val devmodeScaladsl                 = ProjectRef(parentDir, "devmode-scaladsl")
+lazy val pubsubScaladsl                  = ProjectRef(parentDir, "pubsub-scaladsl")
+lazy val akkaDiscoveryJavadsl            = ProjectRef(parentDir, "akka-discovery-service-locator-javadsl")
+lazy val akkaDiscoveryScaladsl           = ProjectRef(parentDir, "akka-discovery-service-locator-scaladsl")
+
 // Needed to compile test classes using immutables annotation
 lazy val immutables = ProjectRef(parentDir, "immutables")
+
+// Pass through system properties starting with "akka"
+// Used to set -Dakka.test.timefactor in CI
+val defaultJavaOptions = Vector("-Xms256M", "-Xmx512M") ++ sys.props.collect {
+  case (key, value) if key.startsWith("akka") => s"-D$key=$value"
+}
 
 // for forked tests, necessary for Cassandra
 def forkedTests: Seq[Setting[_]] = Seq(
   fork in Test := true,
   concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
-  javaOptions in Test ++= Seq("-Xms256M", "-Xmx512M"),
-  testGrouping in Test <<= definedTests in Test map singleTestsGrouping
+  javaOptions in Test ++= defaultJavaOptions,
+  testGrouping in Test := (definedTests in Test).map(singleTestsGrouping).value
 )
 
 // group tests, a single test per group
 def singleTestsGrouping(tests: Seq[TestDefinition]) = {
   // We could group non Cassandra tests into another group
-  // to avoid new JVM for each test, see http://www.scala-sbt.org/release/docs/Testing.html
-  val javaOptions = Seq("-Xms256M", "-Xmx512M")
-  tests map { test =>
-    new Tests.Group(
+  // to avoid new JVM for each test, see https://www.scala-sbt.org/release/docs/Testing.html
+  tests.map { test =>
+    Tests.Group(
       name = test.name,
       tests = Seq(test),
-      runPolicy = Tests.SubProcess(javaOptions))
+      runPolicy = Tests.SubProcess(ForkOptions().withRunJVMOptions(defaultJavaOptions)),
+    )
   }
 }
 
@@ -91,13 +183,9 @@ lazy val theme = project
   .enablePlugins(SbtWeb, SbtTwirl)
   .settings(
     name := "lagom-docs-theme",
-    scalaVersion := "2.11.7",
+    scalaVersion := ScalaVersion,
     resolvers += Resolver.typesafeIvyRepo("releases"),
     libraryDependencies ++= Seq(
-      "com.lightbend.markdown" %% "lightbend-markdown-server" % LightbendMarkdownVersion,
-      "org.webjars" % "jquery" % "1.9.0",
-      "org.webjars" % "prettify" % "4-Mar-2013"
-    ),
-    pipelineStages in Assets := Seq(uglify),
-    LessKeys.compress := true
+      "com.lightbend.markdown" %% "lightbend-markdown-server" % LightbendMarkdownVersion
+    )
   )

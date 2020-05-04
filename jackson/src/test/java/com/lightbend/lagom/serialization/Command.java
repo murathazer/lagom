@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) Lightbend Inc. <https://www.lightbend.com>
  */
+
 package com.lightbend.lagom.serialization;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,6 +31,14 @@ public interface Command extends Jsonable {
 
   @Value.Immutable
   @ImmutableStyle
+  @JsonDeserialize(as = LargeNoCompressionCommand.class)
+  public interface AbstractLargeNoCompressionCommand extends Command, Jsonable {
+    @Value.Parameter
+    String getPayload();
+  }
+
+  @Value.Immutable
+  @ImmutableStyle
   @JsonDeserialize(as = OptionalCommand.class)
   public interface AbstractOptionalCommand extends Command {
     @Value.Parameter
@@ -46,5 +55,4 @@ public interface Command extends Jsonable {
     @JsonProperty(value = "isPublished")
     boolean isPublished();
   }
-
 }

@@ -1,3 +1,0 @@
-Installation:Installing Lagom
-GettingStarted:Getting started with Lagom
-IDEs:Import a Lagom build in your IDE

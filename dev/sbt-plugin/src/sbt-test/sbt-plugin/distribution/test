@@ -9,8 +9,6 @@ $ exists lagomProj/target/universal/stage/lib/lagom-dist-proj.lagom-dist-proj-1.
 > absence lagomProj/target/universal/stage/lib/*service-registry-client*.jar
 > checkDevRuntimeClasspath lagomProj service-registration
 > absence lagomProj/target/universal/stage/lib/*service-registration*.jar
-> checkCassandraRuntimeClasspath lagomProj cassandra-registration
-> absence lagomProj/target/universal/stage/lib/*cassandra-registration*.jar
 > checkDevRuntimeClasspath lagomProj reloadable-server
 > absence lagomProj/target/universal/stage/lib/*reloadable-server*.jar
 
@@ -32,7 +30,6 @@ $ exists playProj/target/universal/stage/lib/play-dist-proj.play-dist-proj-1.0-S
 
 > checkStartScriptLagomProj
 $ exists lagomProj/target/universal/stage/lib
-$ exists lagomProj/target/universal/stage/share/doc/api
 
 > checkStartScriptPlayProj
 $ exists playProj/target/universal/stage/conf/application.conf
